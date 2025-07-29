@@ -1,51 +1,88 @@
 <!DOCTYPE html>
 <html lang="ko">
-
 <head>
-    <meta charset="UTF-8">
-    <title>Code 128 바코드 스캐너1</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        video {
-            width: 100%;
-            max-height: 300px;
-            border: 1px solid #ccc;     
-        }
-
-        #result {
-            font-size: 1.5rem;
-            margin-top: 1rem;
-            color: green;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <title>Code128 바코드 스캐너</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 1rem;
+      text-align: center;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 1rem;
+      margin-bottom: 1rem;
+      cursor: pointer;
+    }
+    video {
+      width: 100%;
+      max-height: 320px;
+      border: 1px solid #ccc;
+      display: none;
+    }
+    #result {
+      margin-top: 1rem;
+      font-size: 1.2rem;
+      color: green;
+    }
+    #error {
+      color: red;
+      margin-top: 1rem;
+    }
+  </style>
 </head>
-
 <body>
-    <h2>📷 바코드 스캔 (Code 128)</h2>
-    <video id="video" muted autoplay></video>
-    <div id="result">결과 없음</div>
+  <h2>📷 Code128 바코드 스캐너</h2>
+  <button id="startBtn">▶️ 바코드 스캔 시작</button>
+  <video id="video" muted playsinline></video>
+  <div id="result">📄 스캔 결과 없음</div>
+  <div id="error"></div>
 
-    <!-- zxing-js/browser -->
-    <script type="module">
-        import { BrowserMultiFormatReader } from 'https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.1/+esm';
+  <script type="module">
+    import { BrowserMultiFormatReader } from 'https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.1/+esm';
 
-        const codeReader = new BrowserMultiFormatReader();
-        const videoElement = document.getElementById('video');
+    const codeReader = new BrowserMultiFormatReader();
+    const videoElement = document.getElementById('video');
+    const resultEl = document.getElementById('result');
+    const errorEl = document.getElementById('error');
+    const startBtn = document.getElementById('startBtn');
 
-        codeReader
-            .listVideoInputDevices()
-            .then(videoInputDevices => {
-                const selectedDeviceId = videoInputDevices[0].deviceId;
+    startBtn.addEventListener('click', initCamera);
 
-                codeReader.decodeFromVideoDevice(selectedDeviceId, videoElement, (result, err) => {
-                    if (result) {
-                        document.getElementById('result').textContent = `✅ 인식 결과: ${result.getText()}`;
-                        codeReader.reset(); // 한 번만 인식 후 멈춤 (여러번 하려면 주석처리)
-                    }
-                });
-            })
-            .catch(err => console.error(err));
-    </script>
+    async function initCamera() {
+      startBtn.disabled = true;
+      startBtn.textContent = "카메라 실행 중...";
+      try {
+        const devices = await codeReader.listVideoInputDevices();
+
+        const backCam = devices.find(d =>
+          d.label.toLowerCase().includes('back')
+        ) || devices[0];
+
+        videoElement.style.display = "block";
+
+        await codeReader.decodeFromVideoDevice(
+          backCam.deviceId,
+          videoElement,
+          (result, err) => {
+            if (result) {
+              resultEl.textContent = `✅ 바코드: ${result.getText()}`;
+              codeReader.reset();
+              startBtn.disabled = false;
+              startBtn.textContent = "▶️ 다시 스캔";
+              videoElement.style.display = "none";
+            }
+          }
+        );
+      } catch (e) {
+        errorEl.textContent = '❌ 카메라 접근에 실패했습니다. 권한을 허용했는지 확인하세요.';
+        console.error(e);
+        startBtn.disabled = false;
+        startBtn.textContent = "▶️ 바코드 스캔 시작";
+      }
+    }
+  </script>
 </body>
-
 </html>
