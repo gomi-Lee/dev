@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Code 128 바코드 스캐너</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        video {
+            width: 100%;
+            max-height: 300px;
+            border: 1px solid #ccc;
+        }
+
+        #result {
+            font-size: 1.5rem;
+            margin-top: 1rem;
+            color: green;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>📷 바코드 스캔 (Code 128)</h2>
+    <video id="video" muted autoplay></video>
+    <div id="result">결과 없음</div>
+
+    <!-- zxing-js/browser -->
+    <script type="module">
+        import { BrowserMultiFormatReader } from 'https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.1/+esm';
+
+        const codeReader = new BrowserMultiFormatReader();
+        const videoElement = document.getElementById('video');
+
+        codeReader
+            .listVideoInputDevices()
+            .then(videoInputDevices => {
+                const selectedDeviceId = videoInputDevices[0].deviceId;
+
+                codeReader.decodeFromVideoDevice(selectedDeviceId, videoElement, (result, err) => {
+                    if (result) {
+                        document.getElementById('result').textContent = `✅ 인식 결과: ${result.getText()}`;
+                        codeReader.reset(); // 한 번만 인식 후 멈춤 (여러번 하려면 주석처리)
+                    }
+                });
+            })
+            .catch(err => console.error(err));
+    </script>
+</body>
+
+</html>
